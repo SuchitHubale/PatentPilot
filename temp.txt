@@ -1,0 +1,282 @@
+export const maxDuration = 60;
+
+import "dotenv/config";
+import { GoogleGenAI } from "@google/genai";
+import { getAuth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+import Chat from "@/models/Chat";
+import connectDB from "@/config/db";
+
+// Initialize Gemini client
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
+
+export async function POST(req) {
+  try {
+    const { userId } = getAuth(req);
+
+    const { chatId, prompt } = await req.json();
+
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    // Connect to DB and find chat
+    await connectDB();
+    const data = await Chat.findOne({ userId, _id: chatId });
+
+    if (!data) {
+      return NextResponse.json({
+        success: false,
+        message: "Chat not found",
+      });
+    }
+
+    // User message
+    const userPrompt = {
+      role: 'user',
+      content: prompt,
+      timestamp: Date.now(),
+    };
+
+    data.messages.push(userPrompt);
+
+    // Prepare content for Gemini
+    const contents = [
+      {
+        role: "user",
+        parts: [{ text: prompt }],
+      },
+    ];
+
+    const result = await ai.models.generateContent({
+      model: "gemini-pro", // or "gemini-2.5-pro"
+      contents,
+    });
+
+    const aiResponse = result.response.text();
+
+    const botMessage = {
+      role: "model",
+      content: aiResponse,
+      timestamp: Date.now(),
+    };
+
+    data.messages.push(botMessage);
+    await data.save();
+
+    return NextResponse.json({
+      success: true,
+      message: aiResponse,
+    });
+
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({
+      success: false,
+      message: "Something went wrong",
+    });
+  }
+}
+
+
+
+export const maxDuration = 60;
+import "dotenv/config";
+import { GoogleGenAI } from "@google/genai";
+import { getAuth } from "@clerk/nextjs/dist/types/server";
+import { NextResponse } from "next/server";
+import Chat from "@/models/Chat";
+import connectDB from "@/config/db";
+
+// async function main() {
+//   const ai = new GoogleGenAI({
+//     apiKey: process.env.GEMINI_API_KEY,
+//   });
+
+//   const tools = [
+//     {
+//       googleSearch: {},
+//     },
+//   ];
+
+//   const config = {
+//     thinkingConfig: {
+//       thinkingBudget: -1,
+//     },
+//     tools,
+//     responseMimeType: "text/plain",
+//   };
+
+//   const model = "gemini-2.5-pro";
+
+//   const contents = [
+//     {
+//       role: "user",
+//       parts: [
+//         {
+//           text: "who is the precident of the INDIA",
+//         },
+//       ],
+//     },
+//   ];
+
+//   const response = await ai.models.generateContentStream({
+//     model,
+//     config,
+//     contents,
+//   });
+
+//   let fullText = "";
+//   for await (const chunk of response) {
+//     fullText += chunk.text;
+//   }
+
+//   // Print the final paragraph
+//   console.log("\nResponse:\n", fullText.trim());
+// }
+
+// main().catch(console.error);
+
+
+const openai = new OpenAI({
+  baseURL: 'https://api.deepseek.com',
+  apiKey: process.env.DEEPSEEK_API_KEY,
+})
+
+export async function POST(req) {
+  try {
+    const { userId } = getAuth(req);
+
+    // extract chatId and prompt from the request body
+    const { chatId, prompt } = await req.json();
+
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    // Find the chat document in the database based on userId and chatId
+    await connectDB();
+    const data = await Chat.findOne({ userId, _id: chatId });
+
+    // create a user message object
+    const userPrompt = {
+      role: 'user',
+      content: prompt,
+      timestamp: Date.now()
+    }
+
+    data.messages.push()
+
+    // call 
+    const completion = await openai.chat.completions.create({
+
+      messages: [{ role: 'user', content: prompt }],
+      model: "deepseek-chat",
+      store: true,
+    })
+
+    const message = completion.choices[0].message;
+    message.timestamp = Date.now();
+    data.messages.push(message);
+    data.save();
+
+    return NextResponse.json({
+      success: true,
+      data: message,
+    });
+  } catch (error) { 
+    return NextResponse.json({
+      success: false,
+      data: error.message,
+    });
+  }
+}
+
+
+
+// new 
+export const maxDuration = 60;
+import "dotenv/config";
+import { GoogleGenAI } from "@google/genai";
+import { getAuth } from "@clerk/nextjs/dist/types/server";
+import { NextResponse } from "next/server";
+import Chat from "@/models/Chat";
+import connectDB from "@/config/db";
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
+
+export async function POST(req) {
+  try {
+    const { userId } = getAuth(req);
+
+    const { chatId, prompt } = await req.json();
+
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    await connectDB();
+    const data = await Chat.findOne({ userId, _id: chatId });
+
+    if (!data) {
+      return NextResponse.json({
+        success: false,
+        message: "Chat not found",
+      });
+    }
+
+    const userPrompt = {
+      role: 'user',
+      content: prompt,
+      timestamp: Date.now(),
+    };
+
+    data.messages.push(userPrompt);
+
+    const contents = [
+      {
+        role: 'user',
+        parts: [{ text: prompt }],
+      },
+    ];
+
+    const result = await ai.models.generateContent({
+      model: 'gemini-1.5-pro-latest', // or 'gemini-1.5-flash-latest' for faster replies
+      contents,
+    });
+
+    const responseText = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    const message = {
+      role: 'model',
+      content: responseText,
+      timestamp: Date.now(),
+    };
+
+    data.messages.push(message);
+    await data.save();
+
+    return NextResponse.json({
+      success: true,
+      data: message,
+    });
+  } catch (error) {
+    return NextResponse.json({
+      success: false,
+      data: error.message,
+    });
+  }
+}

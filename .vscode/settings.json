@@ -1,0 +1,11 @@
+{
+    "zenMode.hideActivityBar": true,
+    "editor.suggest.showStatusBar": true,
+    "workbench.secondarySideBar.defaultVisibility": "visible",
+    "debug.showInStatusBar": "onFirstSessionStart",
+    "problems.showCurrentInStatus": false,
+    "workbench.statusBar.visible": false,
+    "npm.enableRunFromFolder": false,
+    "workbench.layoutControl.enabled": true,
+    "zenMode.centerLayout": true
+}
